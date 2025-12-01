@@ -18,7 +18,7 @@ from homeassistant.components.sensor import SensorStateClass
 from .sensor import Current, OtherSensor, Power, Temperature, Voltage, Work
 
 from .number import MaxCurrent
-from .switch import Lock
+from .switch import Lock, Button
 from .button import StartCharging, StopCharging
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,6 +63,11 @@ class Hub:
         self._devices["lock"] = instance
         new_devices.append(instance)
         self.remove_sensor(hass, "switch", "unlock")
+
+        instance = Button(hass, self, "button", "Button")
+        self._devices["button"] = instance
+        new_devices.append(instance)
+        self.remove_sensor(hass, "switch", "button")
 
         async_add_entities(new_devices)
         entity_registry = er.async_get(hass)
@@ -336,6 +341,8 @@ class Hub:
             await self.process_single_ac_status(data)
         elif command == 5 or command == 6:
             await self.process_charging_status(data)
+        elif command == 269:
+            await self.process_charger_toggle_action(data)
 
     def trim_bytes(self, data: bytes) -> bytes:
         return data.rstrip(b'\x00')
@@ -541,6 +548,14 @@ class Hub:
             missing1 = data[74:len(data)].hex()
             self.update_sensor("missing1", missing1)
         return
+
+    async def process_charger_toggle_action(self, data: bytes):
+        # data is 2 bytes: [action, status]
+        if len(data) >= 1:
+            action = data[0]  # 0 = ON, 1 = OFF
+
+            self.update_sensor("button", action)
+            print(f"[BS20] Charger toggle action received: action={action}")
 
     def get_tg_short(self, serial: string, password: string, cmd: int) -> bytes:
         length = 25
