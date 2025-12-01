@@ -18,7 +18,7 @@ from homeassistant.components.sensor import SensorStateClass
 from .sensor import Current, OtherSensor, Power, Temperature, Voltage, Work
 
 from .number import MaxCurrent
-from .switch import Lock
+from .switch import Lock, Button
 from .button import StartCharging, StopCharging
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,6 +63,11 @@ class Hub:
         self._devices["lock"] = instance
         new_devices.append(instance)
         self.remove_sensor(hass, "switch", "unlock")
+
+        instance = Button(hass, self, "button", "Button")
+        self._devices["lock"] = instance
+        new_devices.append(instance)
+        self.remove_sensor(hass, "switch", "button")
 
         async_add_entities(new_devices)
         entity_registry = er.async_get(hass)
